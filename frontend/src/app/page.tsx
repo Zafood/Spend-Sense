@@ -9,7 +9,7 @@ import {
   calculateMonthlySavings,
 } from "@/lib/budget";
 
-export default function Home() {
+export function Home() {
   // Stores the user's budgets and form information.
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [name, setName] = useState("");
@@ -36,8 +36,7 @@ export default function Home() {
 
     // Loads previously saved budgets from browser storage.
     try {
-      const savedBudgets = localStorage.getItem("spend-sense-budgets");
-
+      const savedBudgets = window.localStorage.getItem("spend-sense-budgets");
       if (savedBudgets) {
         setBudgets(JSON.parse(savedBudgets));
       }
@@ -52,7 +51,7 @@ export default function Home() {
   useEffect(() => {
     if (!loaded) return;
 
-    localStorage.setItem("spend-sense-budgets", JSON.stringify(budgets));
+    window.localStorage.setItem("spend-sense-budgets", JSON.stringify(budgets));
   }, [budgets, loaded]);
 
   // Validates the form and creates a new budget.
@@ -231,3 +230,4 @@ export default function Home() {
     </main>
   );
 }
+export default Home;
