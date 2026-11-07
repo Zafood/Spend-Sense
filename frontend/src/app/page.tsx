@@ -1,6 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import {
+  type Budget,
+  validateBudget,
+  calculateRemaining,
+  calculateProgress,
+  calculateMonthlySavings,
+} from "@/lib/budget";
 
 // Defines the information stored for each budget.
 type Budget = {
@@ -65,27 +72,17 @@ export default function Home() {
     const target = Number(targetAmount);
     const current = Number(currentAmount);
 
-    // Checks that the budget name is not empty.
-    if (!name.trim()) {
-      setError("Please enter a budget name.");
-      return;
-    }
+    // Checks the form information before creating a budget.
+    const validationError = validateBudget(
+      name,
+      target,
+      current,
+      targetDate,
+      today,
+    );
 
-    // Checks that the target amount is valid.
-    if (!targetAmount || !Number.isFinite(target) || target <= 0) {
-      setError("Target amount must be greater than zero.");
-      return;
-    }
-
-    // Checks that the current amount is valid.
-    if (currentAmount === "" || !Number.isFinite(current) || current < 0) {
-      setError("Current amount cannot be negative or empty.");
-      return;
-    }
-
-    // Checks that the target date is in the future.
-    if (!targetDate || targetDate <= today) {
-      setError("Please select a future target date.");
+    if (validationError) {
+      setError(validationError);
       return;
     }
 
@@ -117,27 +114,6 @@ export default function Home() {
     if (confirmed) {
       setBudgets((previous) => previous.filter((budget) => budget.id !== id));
     }
-  }
-
-  // Calculates the monthly savings needed to reach a goal.
-  function calculateMonthlySavings(budget: Budget) {
-    const remaining = Math.max(0, budget.targetAmount - budget.currentAmount);
-
-    // Calculates the number of days until the target date.
-    const startDate = new Date(today + "T12:00:00");
-    const endDate = new Date(budget.targetDate + "T12:00:00");
-
-    const daysRemaining = Math.max(
-      1,
-      Math.ceil(
-        (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24),
-      ),
-    );
-
-    // Converts the remaining days into months.
-    const monthsRemaining = Math.max(1, Math.ceil(daysRemaining / 30));
-
-    return remaining / monthsRemaining;
   }
 
   return (
@@ -230,16 +206,10 @@ export default function Home() {
         <p>No budgets exist yet. Create your first budget above.</p>
       ) : (
         budgets.map((budget) => {
-          // Calculates the remaining amount and progress.
-          const remaining = Math.max(
-            0,
-            budget.targetAmount - budget.currentAmount,
-          );
-
-          const progress = Math.min(
-            100,
-            (budget.currentAmount / budget.targetAmount) * 100,
-          );
+          // Uses the shared functions to calculate budget progress.
+          const remaining = calculateRemaining(budget);
+          const progress = calculateProgress(budget);
+          const monthlySavings = calculateMonthlySavings(budget, today);
 
           return (
             <section key={budget.id}>
@@ -255,10 +225,7 @@ export default function Home() {
 
               <p>Progress: {progress.toFixed(1)}%</p>
 
-              <p>
-                Required Monthly Savings: $
-                {calculateMonthlySavings(budget).toFixed(2)}
-              </p>
+              <p>Required Monthly Savings: ${monthlySavings.toFixed(2)}</p>
 
               {/* Allows the user to delete this budget. */}
               <button type="button" onClick={() => deleteBudget(budget.id)}>
