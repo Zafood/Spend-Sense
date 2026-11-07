@@ -9,15 +9,6 @@ import {
   calculateMonthlySavings,
 } from "@/lib/budget";
 
-// Defines the information stored for each budget.
-type Budget = {
-  id: number;
-  name: string;
-  targetAmount: number;
-  currentAmount: number;
-  targetDate: string;
-};
-
 export default function Home() {
   // Stores the user's budgets and form information.
   const [budgets, setBudgets] = useState<Budget[]>([]);
