@@ -20,11 +20,23 @@ export default function Home() {
   const [targetDate, setTargetDate] = useState("");
   const [error, setError] = useState("");
 
-  // Tracks when saved budgets have finished loading.
+  // Tracks when saved data and today's date have loaded.
   const [loaded, setLoaded] = useState(false);
+  const [today, setToday] = useState("");
 
-  // Loads previously saved budgets when the page opens.
+  // Loads saved budgets and today's date when the page opens.
   useEffect(() => {
+    // Gets today's date using the computer's local timezone.
+    const now = new Date();
+    const localDate = [
+      now.getFullYear(),
+      String(now.getMonth() + 1).padStart(2, "0"),
+      String(now.getDate()).padStart(2, "0"),
+    ].join("-");
+
+    setToday(localDate);
+
+    // Loads previously saved budgets from browser storage.
     try {
       const savedBudgets = localStorage.getItem("spend-sense-budgets");
 
@@ -72,8 +84,6 @@ export default function Home() {
     }
 
     // Checks that the target date is in the future.
-    const today = new Date().toISOString().split("T")[0];
-
     if (!targetDate || targetDate <= today) {
       setError("Please select a future target date.");
       return;
@@ -113,14 +123,18 @@ export default function Home() {
   function calculateMonthlySavings(budget: Budget) {
     const remaining = Math.max(0, budget.targetAmount - budget.currentAmount);
 
+    // Calculates the number of days until the target date.
+    const startDate = new Date(today + "T12:00:00");
+    const endDate = new Date(budget.targetDate + "T12:00:00");
+
     const daysRemaining = Math.max(
       1,
       Math.ceil(
-        (new Date(budget.targetDate + "T12:00:00").getTime() - Date.now()) /
-          (1000 * 60 * 60 * 24),
+        (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24),
       ),
     );
 
+    // Converts the remaining days into months.
     const monthsRemaining = Math.max(1, Math.ceil(daysRemaining / 30));
 
     return remaining / monthsRemaining;
@@ -158,7 +172,7 @@ export default function Home() {
             id="targetAmount"
             type="number"
             min="0.01"
-            step="0.01"
+            step="any"
             value={targetAmount}
             onChange={(e) => setTargetAmount(e.target.value)}
           />
@@ -175,7 +189,7 @@ export default function Home() {
             id="currentAmount"
             type="number"
             min="0"
-            step="0.01"
+            step="any"
             value={currentAmount}
             onChange={(e) => setCurrentAmount(e.target.value)}
           />
@@ -190,7 +204,7 @@ export default function Home() {
             id="targetDate"
             type="date"
             value={targetDate}
-            min={new Date().toISOString().split("T")[0]}
+            min={today}
             onChange={(e) => setTargetDate(e.target.value)}
           />
         </div>
