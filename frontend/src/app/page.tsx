@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 
+// Defines the information stored for each budget.
 type Budget = {
   id: number;
   name: string;
@@ -11,6 +12,7 @@ type Budget = {
 };
 
 export default function Home() {
+  // Stores the user's budgets and form information.
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [name, setName] = useState("");
   const [targetAmount, setTargetAmount] = useState("");
@@ -18,7 +20,10 @@ export default function Home() {
   const [targetDate, setTargetDate] = useState("");
   const [error, setError] = useState("");
 
-  // Load saved budgets when the page opens.
+  // Tracks when saved budgets have finished loading.
+  const [loaded, setLoaded] = useState(false);
+
+  // Loads previously saved budgets when the page opens.
   useEffect(() => {
     try {
       const savedBudgets = localStorage.getItem("spend-sense-budgets");
@@ -28,14 +33,19 @@ export default function Home() {
       }
     } catch {
       setError("Could not load saved budgets.");
+    } finally {
+      setLoaded(true);
     }
   }, []);
 
-  // Save budgets whenever the list changes.
+  // Saves budgets whenever the list changes.
   useEffect(() => {
-    localStorage.setItem("spend-sense-budgets", JSON.stringify(budgets));
-  }, [budgets]);
+    if (!loaded) return;
 
+    localStorage.setItem("spend-sense-budgets", JSON.stringify(budgets));
+  }, [budgets, loaded]);
+
+  // Validates the form and creates a new budget.
   function addBudget(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
@@ -43,26 +53,33 @@ export default function Home() {
     const target = Number(targetAmount);
     const current = Number(currentAmount);
 
+    // Checks that the budget name is not empty.
     if (!name.trim()) {
       setError("Please enter a budget name.");
       return;
     }
 
+    // Checks that the target amount is valid.
     if (!targetAmount || !Number.isFinite(target) || target <= 0) {
       setError("Target amount must be greater than zero.");
       return;
     }
 
+    // Checks that the current amount is valid.
     if (currentAmount === "" || !Number.isFinite(current) || current < 0) {
       setError("Current amount cannot be negative or empty.");
       return;
     }
 
-    if (!targetDate || targetDate <= new Date().toISOString().split("T")[0]) {
+    // Checks that the target date is in the future.
+    const today = new Date().toISOString().split("T")[0];
+
+    if (!targetDate || targetDate <= today) {
       setError("Please select a future target date.");
       return;
     }
 
+    // Creates a new budget using the form information.
     const newBudget: Budget = {
       id: Date.now(),
       name: name.trim(),
@@ -71,15 +88,17 @@ export default function Home() {
       targetDate,
     };
 
+    // Adds the new budget to the dashboard.
     setBudgets((previous) => [...previous, newBudget]);
 
-    // Clear the form.
+    // Clears the form after successful submission.
     setName("");
     setTargetAmount("");
     setCurrentAmount("0");
     setTargetDate("");
   }
 
+  // Deletes a budget after user confirmation.
   function deleteBudget(id: number) {
     const confirmed = window.confirm(
       "Are you sure you want to delete this budget?",
@@ -90,6 +109,7 @@ export default function Home() {
     }
   }
 
+  // Calculates the monthly savings needed to reach a goal.
   function calculateMonthlySavings(budget: Budget) {
     const remaining = Math.max(0, budget.targetAmount - budget.currentAmount);
 
@@ -115,6 +135,7 @@ export default function Home() {
 
       <h2>Add a Budget</h2>
 
+      {/* Form for creating a new budget. */}
       <form onSubmit={addBudget}>
         <div>
           <label htmlFor="name">Budget / Savings Goal Name</label>
@@ -179,6 +200,7 @@ export default function Home() {
         <button type="submit">Create Budget</button>
       </form>
 
+      {/* Displays validation errors when necessary. */}
       {error && (
         <p role="alert" style={{ color: "red" }}>
           {error}
@@ -189,10 +211,12 @@ export default function Home() {
 
       <h2>Your Budgets</h2>
 
+      {/* Displays a message when no budgets exist. */}
       {budgets.length === 0 ? (
         <p>No budgets exist yet. Create your first budget above.</p>
       ) : (
         budgets.map((budget) => {
+          // Calculates the remaining amount and progress.
           const remaining = Math.max(
             0,
             budget.targetAmount - budget.currentAmount,
@@ -222,6 +246,7 @@ export default function Home() {
                 {calculateMonthlySavings(budget).toFixed(2)}
               </p>
 
+              {/* Allows the user to delete this budget. */}
               <button type="button" onClick={() => deleteBudget(budget.id)}>
                 Delete Budget
               </button>
