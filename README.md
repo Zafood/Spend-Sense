@@ -28,6 +28,12 @@ An expense tracking application focused on setting and achieving budgeting goals
 
    `npm run dev`
 
+- might be necessary to run these commands instead
+
+  `fnm env --use-on-cd | Out-String | Invoke-Expression`
+  `fnm use 26`
+  `npm.cmd run dev`
+
 4. Open http://localhost:3000 in your browser.
 
 ## Running Tests
