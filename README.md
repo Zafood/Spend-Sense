@@ -24,7 +24,7 @@ An expense tracking application focused on setting and achieving budgeting goals
 
    `npm install`
 
-3. Start the development server:
+3. Start the development server: {make sure you are in the frontend folder}
 
    `npm run dev`
 
@@ -38,7 +38,7 @@ An expense tracking application focused on setting and achieving budgeting goals
 
 ## Running Tests
 
-To run the automated tests, use:
+To run the automated tests, use: {make sure you are in the frontend folder}
 
 `npm test`
 
