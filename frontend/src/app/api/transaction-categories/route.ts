@@ -1,0 +1,5 @@
+import {NextRequest,NextResponse} from "next/server";
+import {userOrError,mutationError,jsonBody,noStore} from "@/lib/server/transaction-http";
+import {categoriesFor,addCategory} from "@/lib/server/transaction-service";
+export async function GET(){const auth=await userOrError();if("response" in auth)return auth.response;try{return NextResponse.json(await categoriesFor(auth.userId),{headers:noStore});}catch{return NextResponse.json({error:"Could not load categories."},{status:500});}}
+export async function POST(req:NextRequest){const auth=await userOrError();if("response" in auth)return auth.response;const e=mutationError(req);if(e)return e;const body=await jsonBody(req);if(body===null)return NextResponse.json({error:"Invalid JSON."},{status:400});try{const result=await addCategory(auth.userId,body);return "error" in result?NextResponse.json(result,{status:400}):NextResponse.json(result.value,{status:201});}catch{return NextResponse.json({error:"Could not add category."},{status:500});}}

@@ -1,9 +1,11 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 
 export function LoginForm() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -13,7 +15,7 @@ export function LoginForm() {
     try {
       const result = await signIn("credentials", { email, password, redirect: false });
       if (result?.error) setError("Invalid credentials or too many attempts. Try again later.");
-      else window.location.assign("/dashboard");
+      else router.push("/dashboard");
     } catch { setError("Sign-in unavailable. Please try again."); }
     finally { setBusy(false); }
   }

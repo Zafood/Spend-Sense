@@ -1,8 +1,10 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 export function RegisterForm() {
+  const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -18,7 +20,7 @@ export function RegisterForm() {
       if (!response.ok) { const data = await response.json(); setError(data.error ?? "Registration failed."); return; }
       const result = await signIn("credentials", { email, password, redirect: false });
       if (result?.error) setError("Account created. Please sign in.");
-      else window.location.assign("/dashboard");
+      else router.push("/dashboard");
     } catch { setError("Registration unavailable. Try again later."); }
     finally { setBusy(false); }
   }
