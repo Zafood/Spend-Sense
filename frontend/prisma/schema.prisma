@@ -7,17 +7,69 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Authentication and credential creation are implemented in Stage 2.
 model User {
-  id           String        @id @default(uuid()) @db.Uuid
-  email        String        @unique @db.VarChar(320)
-  passwordHash String?       @map("password_hash") @db.Text
-  createdAt    DateTime      @default(now()) @map("created_at")
-  updatedAt    DateTime      @updatedAt @map("updated_at")
-  savingsGoals SavingsGoal[]
-  transactions Transaction[]
+  id            String        @id @default(uuid()) @db.Uuid
+  name          String?       @db.VarChar(120)
+  email         String        @unique @db.VarChar(320)
+  emailVerified DateTime?     @map("email_verified")
+  image         String?       @db.Text
+  passwordHash  String?       @map("password_hash") @db.Text
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+  accounts      Account[]
+  linkIntents   AccountLinkIntent[]
+  savingsGoals  SavingsGoal[]
+  transactions  Transaction[]
 
   @@map("users")
+}
+
+// OAuth providers. No provider access/refresh tokens are stored: Spend Sense
+// requests only identity and does not call Google/GitHub APIs.
+model Account {
+  id                String  @id @default(cuid())
+  userId            String  @map("user_id") @db.Uuid
+  type              String
+  provider          String
+  providerAccountId String  @map("provider_account_id")
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+  @@map("oauth_accounts")
+}
+
+// One-time, short-lived requests made by an already authenticated user.
+// Only SHA-256 hashes of opaque nonces and session tokens are stored.
+model AccountLinkIntent {
+  id                 String   @id @default(uuid()) @db.Uuid
+  userId             String   @map("user_id") @db.Uuid
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider           String   @db.VarChar(24)
+  nonceHash          String   @unique @map("nonce_hash") @db.Char(64)
+  sessionFingerprint String   @map("session_fingerprint") @db.Char(64)
+  expiresAt          DateTime @map("expires_at")
+  usedAt             DateTime? @map("used_at")
+  createdAt          DateTime @default(now()) @map("created_at")
+
+  @@index([userId, expiresAt])
+  @@map("account_link_intents")
+}
+
+model AuthThrottle {
+  key          String   @id @db.VarChar(100)
+  attempts     Int      @default(0)
+  windowStart  DateTime @map("window_start")
+  blockedUntil DateTime? @map("blocked_until")
+
+  @@map("auth_throttles")
 }
 
 model SavingsGoal {
@@ -35,7 +87,6 @@ model SavingsGoal {
   @@map("savings_goals")
 }
 
-// Transaction functionality will be implemented in Stage 3.
 model Transaction {
   id          String          @id @default(uuid()) @db.Uuid
   userId      String          @map("user_id") @db.Uuid
