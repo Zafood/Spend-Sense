@@ -9,6 +9,11 @@ import {
   calculateMonthlySavings,
 } from "@/lib/budget";
 
+function localToday(): string {
+  const now = new Date();
+  return [now.getFullYear(), String(now.getMonth() + 1).padStart(2, "0"), String(now.getDate()).padStart(2, "0")].join("-");
+}
+
 export function Home() {
 
   // Stores the user's budgets and form information.
@@ -20,20 +25,10 @@ export function Home() {
   const [error, setError] = useState("");
 
   // Tracks today's date for the savings calculator.
-  const [today, setToday] = useState("");
+  const [today] = useState(localToday);
 
   // Loads saved budgets and today's date when the page opens.
   useEffect(() => {
-    // Gets today's date using the computer's local timezone.
-    const now = new Date();
-    const localDate = [
-      now.getFullYear(),
-      String(now.getMonth() + 1).padStart(2, "0"),
-      String(now.getDate()).padStart(2, "0"),
-    ].join("-");
-
-    setToday(localDate);
-
     async function loadBudgets() {
       try {
         const response = await fetch("/api/savings-goals", { cache: "no-store" });

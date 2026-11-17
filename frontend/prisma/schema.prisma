@@ -20,6 +20,7 @@ model User {
   linkIntents   AccountLinkIntent[]
   savingsGoals  SavingsGoal[]
   transactions  Transaction[]
+  categories    TransactionCategory[]
 
   @@map("users")
 }
@@ -106,4 +107,18 @@ model Transaction {
 enum TransactionKind {
   INCOME
   EXPENSE
+}
+
+// Custom categories are private to a user. Built-in defaults are defined in code.
+model TransactionCategory {
+  id        String          @id @default(uuid()) @db.Uuid
+  userId    String          @map("user_id") @db.Uuid
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind      TransactionKind
+  name      String          @db.VarChar(80)
+  createdAt DateTime        @default(now()) @map("created_at")
+
+  @@unique([userId, kind, name])
+  @@index([userId])
+  @@map("transaction_categories")
 }
