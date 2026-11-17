@@ -10,6 +10,8 @@ import {
 } from "@/lib/budget";
 
 export function Home() {
+  const databaseMode = process.env.NEXT_PUBLIC_USE_DATABASE === "true";
+
   // Stores the user's budgets and form information.
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [name, setName] = useState("");
@@ -34,28 +36,36 @@ export function Home() {
 
     setToday(localDate);
 
-    // Loads previously saved budgets from browser storage.
-    try {
-      const savedBudgets = window.localStorage.getItem("spend-sense-budgets");
-      if (savedBudgets) {
-        setBudgets(JSON.parse(savedBudgets));
+    async function loadBudgets() {
+      try {
+        if (databaseMode) {
+          const response = await fetch("/api/dev/savings-goals", { cache: "no-store" });
+          if (!response.ok) throw new Error();
+          const saved = await response.json();
+          if (!Array.isArray(saved)) throw new Error();
+          setBudgets(saved);
+        } else {
+          const saved = window.localStorage.getItem("spend-sense-budgets");
+          if (saved) setBudgets(JSON.parse(saved));
+        }
+      } catch {
+        setError("Could not load saved budgets.");
+      } finally {
+        setLoaded(true);
       }
-    } catch {
-      setError("Could not load saved budgets.");
-    } finally {
-      setLoaded(true);
     }
-  }, []);
+    void loadBudgets();
+  }, [databaseMode]);
 
   // Saves budgets whenever the list changes.
   useEffect(() => {
-    if (!loaded) return;
+    if (!loaded || databaseMode) return;
 
     window.localStorage.setItem("spend-sense-budgets", JSON.stringify(budgets));
-  }, [budgets, loaded]);
+  }, [budgets, loaded, databaseMode]);
 
   // Validates the form and creates a new budget.
-  function addBudget(event: React.FormEvent<HTMLFormElement>) {
+  async function addBudget(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
 
@@ -76,16 +86,30 @@ export function Home() {
       return;
     }
 
-    // Creates a new budget using the form information.
-    const newBudget: Budget = {
-      id: Date.now(),
-      name: name.trim(),
-      targetAmount: target,
-      currentAmount: current,
-      targetDate,
+    let newBudget: Budget = {
+      id: Date.now(), name: name.trim(), targetAmount: target,
+      currentAmount: current, targetDate,
     };
 
-    // Adds the new budget to the dashboard.
+    if (databaseMode) {
+      try {
+        const response = await fetch("/api/dev/savings-goals", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: newBudget.name, targetAmount: target, currentAmount: current, targetDate }),
+        });
+        if (!response.ok) {
+          const result = await response.json().catch(() => null);
+          setError(result?.error ?? "Could not save budget.");
+          return;
+        }
+        newBudget = await response.json();
+      } catch {
+        setError("Could not save budget.");
+        return;
+      }
+    }
+
     setBudgets((previous) => [...previous, newBudget]);
 
     // Clears the form after successful submission.
@@ -96,14 +120,22 @@ export function Home() {
   }
 
   // Deletes a budget after user confirmation.
-  function deleteBudget(id: number) {
+  async function deleteBudget(id: number | string) {
     const confirmed = window.confirm(
       "Are you sure you want to delete this budget?",
     );
 
-    if (confirmed) {
-      setBudgets((previous) => previous.filter((budget) => budget.id !== id));
+    if (!confirmed) return;
+    if (databaseMode) {
+      try {
+        const response = await fetch(`/api/dev/savings-goals/${id}`, { method: "DELETE" });
+        if (!response.ok) throw new Error();
+      } catch {
+        setError("Could not delete budget.");
+        return;
+      }
     }
+    setBudgets((previous) => previous.filter((budget) => budget.id !== id));
   }
 
   return (
