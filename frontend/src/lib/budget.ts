@@ -1,5 +1,5 @@
 export type Budget = {
-  id: number;
+  id: number | string;
   name: string;
   targetAmount: number;
   currentAmount: number;

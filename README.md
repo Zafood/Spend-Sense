@@ -15,7 +15,7 @@ An expense tracking application focused on setting and achieving budgeting goals
 - TypeScript
 - Vitest
 - React Testing Library
-- Browser localStorage
+- PostgreSQL + Prisma (optional Stage 1 local-only mode); browser localStorage fallback
 
 ## Running the Application
 
@@ -55,4 +55,8 @@ The tests cover budget validation, calculations, dashboard interactions, and loc
 
 ## Future Development
 
-SQL database implementation and backend integration are planned for future development phases.
+Stage 1 PostgreSQL schema and local-only backend API are implemented. Authentication and secure multi-user data access remain Stage 2. See [STAGE-1-DATABASE.md](STAGE-1-DATABASE.md).
+
+## Stage 1
+
+See [STAGE-1-DATABASE.md](STAGE-1-DATABASE.md) for database setup, migration, and security notes. Run `npm install` to regenerate `package-lock.json` after installing the new dependencies.
